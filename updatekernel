@@ -1,0 +1,73 @@
+#Copyright (c) 2018 Peter M. Green
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy of
+#this software and associated documentation files (the "Software"), to deal in
+#the Software without restriction, including without limitation the rights to
+#use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+#of the Software, and to permit persons to whom the Software is furnished to do
+#so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in all
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
+
+#!/bin/bash -ev
+SCRIPTDIR=`dirname $(readlink -f $0)`
+cd /build/git/l/linux-4.9
+$SCRIPTDIR/mkpkgonly +rpi
+mkdir -p /build/tmp/kernelupdater
+cd /build/tmp/kernelupdater
+rm -rf linux-4.9
+git clone /build/git/l/linux-4.9
+cd linux-4.9
+git checkout stretch-staging
+OLDVERSION=`dpkg-parsechangelog -Sversion`
+OLDTS=`git log -1 --pretty=format:%ct`
+OLDTAG=`/build/autoforwardportergit/versiontotag $OLDVERSION`
+git config --local user.name "Raspbian kernel package updater"
+git config --local user.email root@raspbian.org
+git config merge.conflictstyle diff3
+#check this out so git sets up the branch
+git checkout packaging
+PBTS=`git log -1 --pretty=format:%ct`
+git checkout ${OLDTAG}=pkgonly
+#only merge the packaging branch if it is newer than the old tag.
+if [ "$PBTS" -gt "$OLDTS" ]; then
+  git merge --no-edit packaging
+fi
+cp -a debian/buildnewlinuxpackage ..
+git fetch /build/git/l/linux stretch-deb
+git checkout FETCH_HEAD
+DEBVERSION=`dpkg-parsechangelog -Sversion`
+DEBTAG=`/build/autoforwardportergit/versiontotag $DEBVERSION`
+../buildnewlinuxpackage/buildnewlinuxpackage-stage0 /build/git/l/linux-4.9 $OLDTAG /build/git/l/linux $DEBTAG rpi-4.9.y
+../buildnewlinuxpackage/buildnewlinuxpackage-stage1
+../buildnewlinuxpackage/buildnewlinuxpackage-stage2
+cp -l /build/workingrepo/pool/main/l/linux/linux_`dpkg-parsechangelog -Sversion | cut -d '-' -f 1`.orig.tar.xz ../linux-4.9_`dpkg-parsechangelog -Sversion | cut -d '-' -f 1`.orig.tar.xz
+../buildnewlinuxpackage/buildnewlinuxpackage-stage3
+dgit build-source
+git branch stretch-working
+git push -f origin stretch-working
+NEWVERSION=`dpkg-parsechangelog -Sversion`
+$SCRIPTDIR/dojessiechanges
+dgit build-source
+git branch jessie-working
+git push -f origin jessie-working
+git checkout stretch-working --detach
+$SCRIPTDIR/dobusterchanges
+dgit build-source
+git branch buster-working
+git push -f origin buster-working
+cd ..
+rm linux-4.9_${NEWVERSION}_source.changes
+sbuild -snA --force-orig-source -d stretch-staging linux-4.9_${NEWVERSION}.dsc
+rm linux-4.9_${NEWVERSION}~jessie_source.changes
+sbuild -snA --force-orig-source -d jessie-staging linux-4.9_${NEWVERSION}~jessie.dsc
+rm linux-4.9_${NEWVERSION}+buster_source.changes
+sbuild -snA --force-orig-source -d buster-staging linux-4.9_${NEWVERSION}+buster.dsc

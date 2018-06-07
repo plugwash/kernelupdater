@@ -1,0 +1,9 @@
+linux-4.9 (!!!VERSION!!!+buster) buster-staging; urgency=medium
+
+  [Buster changes for linux 4.9 by Peter Michael green]
+  * Rebuild for buster.
+  * Disable libc-dev package.
+  * Disable usbip and cpupower packages.
+
+ -- Raspbian automatic kernel updater <root@raspbian.org>  !!!DATE!!!
+

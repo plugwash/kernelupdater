@@ -1,0 +1,107 @@
+diff --git a/debian/config/defines b/debian/config/defines
+index 1f3be9cc827f..7f07789b61a7 100644
+--- a/debian/config/defines
++++ b/debian/config/defines
+@@ -112,3 +112,6 @@ gcc-4.9: gcc-4.9 <!stage1 !cross>, gcc-6-@gnu-type-package@:native <!stage1 cros
+ # initramfs-generators
+ initramfs-fallback: linux-initramfs-tool
+ initramfs-tools: initramfs-tools (>= 0.120+deb8u2)
++
++[packages]
++libc-dev: false
+diff --git a/debian/rules.real b/debian/rules.real
+index d32f4aad1612..c34ec9faa535 100644
+--- a/debian/rules.real
++++ b/debian/rules.real
+@@ -75,7 +75,7 @@ binary-indep: install-support
+ 
+ ifneq ($(DO_TOOLS),False)
+   build-arch-arch: $(STAMPS_DIR)/build-tools
+-  binary-arch-arch: install-kbuild install-usbip install-cpupower
++  binary-arch-arch: install-kbuild
+ #  binary-arch-arch: install-liblockdep
+   ifneq ($(filter alpha amd64 arm64 armel armhf hppa i386 mips mips64 mips64el mipsel powerpc powerpcspe ppc64 ppc64el s390 s390x sh4 sparc sparc64,$(DEB_HOST_ARCH)),)
+     ifeq ($(filter nopython,$(DEB_BUILD_PROFILES)),)
+diff --git a/debian/templates/control.tools.in b/debian/templates/control.tools.in
+index 735c88c82edd..c3cf0bb5e750 100644
+--- a/debian/templates/control.tools.in
++++ b/debian/templates/control.tools.in
+@@ -6,37 +6,6 @@ Multi-Arch: foreign
+ Description: Kbuild infrastructure for Linux @version@
+  This package provides the kbuild infrastructure for the headers packages for Linux kernel version @version@.
+ 
+-Package: linux-cpupower
+-Build-Profiles: <!stage1 !pkg.linux.notools>
+-Section: admin
+-Architecture: linux-any
+-Depends: ${shlibs:Depends}, ${misc:Depends}
+-Description: CPU power management tools for Linux
+- The cpupower command allows inspection and control of cpufreq and
+- cpuidle tunables for hardware that support these features.  It
+- replaces "cpufreq-info" and "cpufreq-set" in cpufrequtils.
+- .
+- ${cpupower:Arch-Description}
+-
+-Package: libcpupower1
+-Build-Profiles: <!stage1 !pkg.linux.notools>
+-Section: libs
+-Architecture: linux-any
+-Depends: ${shlibs:Depends}, ${misc:Depends}
+-Description: CPU frequency and voltage scaling tools for Linux (libraries)
+- This package contains the shared library.
+-
+-Package: libcpupower-dev
+-Build-Profiles: <!stage1 !pkg.linux.notools>
+-Section: libdevel
+-Architecture: linux-any
+-Depends: ${shlibs:Depends}, ${misc:Depends}, libcpupower1 (= ${binary:Version})
+-Provides: libcpufreq-dev
+-Conflicts: libcpufreq-dev
+-Replaces: libcpufreq-dev
+-Description: CPU frequency and voltage scaling tools for Linux (development files)
+- This package contains the 'power/cpupower' headers and library shared objects.
+-
+ Package: linux-perf-@version@
+ Build-Profiles: <!stage1 !pkg.linux.notools !nopython>
+ Section: devel
+@@ -54,40 +23,6 @@ Description: Performance analysis tools for Linux @version@
+  The linux-base package contains a 'perf' command which will invoke the
+  appropriate version for the running kernel.
+ 
+-Package: libusbip-dev
+-Build-Profiles: <!stage1 !pkg.linux.notools>
+-Architecture: linux-any
+-Depends: ${misc:Depends}
+-Section: libdevel
+-Description: USB device sharing system over IP network (development files)
+- USB/IP is a system for sharing USB devices over the network.
+- .
+- This package provides headers for the libusbip library and
+- the library itself for static linking.
+-
+-Package: usbip
+-Build-Profiles: <!stage1 !pkg.linux.notools>
+-Architecture: linux-any
+-Depends: usbutils, ${shlibs:Depends}, ${misc:Depends}
+-Section: admin
+-Description: USB device sharing system over IP network
+- USB/IP is a system for sharing USB devices over the network.
+- .
+- To share USB devices between computers with their full
+- functionality, USB/IP encapsulates "USB requests" into IP
+- packets and transmits them between computers.
+- .
+- Original USB device drivers and applications can be used
+- for remote USB devices without any modification of them. A
+- computer can use remote USB devices as if they were
+- directly attached.
+- .
+- Currently USB/IP provides no access control or encryption.
+- It should only be used in trusted environments.
+- .
+- This package provides the server component 'usbipd' and the
+- client tool 'usbip'.
+-
+ Package: hyperv-daemons
+ Build-Profiles: <!stage1 !pkg.linux.notools>
+ Architecture: i386 amd64 x32

@@ -1,0 +1,8 @@
+linux-4.9 (!!!VERSION!!!~jessie) jessie-staging; urgency=medium
+
+  [Changes brought forward from 4.9.51-1+rpi1~jessie by Peter Michael Green]
+  * Rebuild for jessie.
+  * Disable libc-dev package.
+
+ -- Raspbian automatic kernel updater <root@raspbian.org>  !!!DATE!!!
+
